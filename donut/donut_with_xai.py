@@ -1,23 +1,21 @@
-import argparse
-import gradio as gr
-import torch
-from donut import DonutModel
-import numpy as np
-import cv2
-from copy import deepcopy
-from PIL import Image
 from typing import Dict, Tuple
+from copy import deepcopy
+import argparse
+import cv2
+import torch
+import numpy as np
+import gradio as gr
+from PIL import Image
+from donut import DonutModel
 
 
-def resize_and_pad(img: np.ndarray, size: tuple = (1280, 960), pad_color=0):
+def resize_and_pad(
+    img: np.ndarray, size: tuple = (1280, 960), pad_color: int = 0
+) -> np.ndarray:
     h, w = img.shape[:2]
     sh, sw = size
-
     # interpolation method
-    if h > sh or w > sw:  # shrinking image
-        interp = cv2.INTER_AREA
-    else:  # stretching image
-        interp = cv2.INTER_CUBIC
+    interp = cv2.INTER_AREA if h > sh or w > sw else cv2.INTER_CUBIC
 
     # aspect ratio of image
     aspect = w / h
@@ -26,18 +24,21 @@ def resize_and_pad(img: np.ndarray, size: tuple = (1280, 960), pad_color=0):
     if aspect > 1:  # horizontal image
         new_w = sw
         new_h = np.round(new_w / aspect).astype(int)
-        pad_vert = (sh - new_h) // 2
+        pad_vert = max((sh - new_h) // 2, 0)
         pad_top, pad_bot = pad_vert, pad_vert
         pad_left, pad_right = 0, 0
     elif aspect < 1:  # vertical image
         new_h = sh
         new_w = np.round(new_h * aspect).astype(int)
-        pad_horz = (sw - new_w) // 2
+        pad_horz = max((sw - new_w) // 2, 0)
         pad_left, pad_right = pad_horz, pad_horz
         pad_top, pad_bot = 0, 0
     else:  # square image
-        new_h, new_w = sh, sw
-        pad_left, pad_right, pad_top, pad_bot = 0, 0, 0, 0
+        new_h, new_w = min(sh, h), min(sw, w)
+        pad_horz = max((sw - new_w) // 2, 0)
+        pad_vert = max((sh - new_h) // 2, 0)
+        pad_left, pad_right = pad_horz, pad_horz
+        pad_top, pad_bot = pad_vert, pad_vert
 
     # set pad color
     if len(img.shape) == 3 and not isinstance(pad_color, (list, tuple, np.ndarray)):
@@ -54,7 +55,6 @@ def resize_and_pad(img: np.ndarray, size: tuple = (1280, 960), pad_color=0):
         borderType=cv2.BORDER_CONSTANT,
         value=pad_color,
     )
-
     return scaled_img
 
 
@@ -83,7 +83,7 @@ def demo_process_vqa(input_img: np.ndarray, question: str) -> Tuple[np.ndarray, 
     parsed_out = output["predictions"][0]
 
     cross_attentions = output["attentions"]["cross_attentions"]
-    token_indices = [_ for _ in range(len(cross_attentions))]
+    token_indices = list(range(len(cross_attentions)))
     agg_heatmap = np.zeros(cv_img_resized.shape[:2], dtype=np.uint8)
 
     head_fusion_type = ["mean", "max", "min"][1]
@@ -169,6 +169,6 @@ if __name__ == "__main__":
         fn=demo_process_vqa,
         inputs=[input_image, input_text],
         outputs=[cross_attention_map, parsed_output],
-        title=f"Donut 🍩 demonstration for Delivery Order Inference",
+        title="Donut 🍩 demonstration for Delivery Order Inference",
     )
     demo.launch(server_name="0.0.0.0", server_port=30001)
