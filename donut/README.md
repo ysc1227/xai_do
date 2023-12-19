@@ -1,7 +1,7 @@
 <div align="center">
     
 # Donut with XAI
-This Repository based on the original [**Donut**](https://github.com/clovaai/donut) repository.
+This Repository is based on the original [**Donut**](https://github.com/clovaai/donut) repository.
 </div>
 
 ## Web Demo (Gradio)
@@ -10,10 +10,11 @@ This Repository based on the original [**Donut**](https://github.com/clovaai/don
 python donut_with_xai.py
 ```
 ### Environment Requirements (Note: Important!!!)
+* Python 3.8.5
 * CUDA 11.1
 * CuDNN 8.1.1
 * Pytorch 1.10.1
-* transformers 4.11.3
+* Transformers 4.11.3
 
 ## Dependencies installation
 ```bash
